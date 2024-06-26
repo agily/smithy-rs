@@ -18,7 +18,7 @@ import software.amazon.smithy.rust.codegen.core.smithy.protocols.parse.Structure
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.serialize.Ec2QuerySerializerGenerator
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.serialize.StructuredDataSerializerGenerator
 
-class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protocol {
+open class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protocol {
     private val runtimeConfig = codegenContext.runtimeConfig
     private val ec2QueryErrors: RuntimeType = RuntimeType.ec2QueryErrors(runtimeConfig)
     private val errorScope =

@@ -17,6 +17,7 @@ import software.amazon.smithy.rust.codegen.core.smithy.RuntimeConfig
 import software.amazon.smithy.rust.codegen.core.smithy.RuntimeType
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.AwsJson
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.AwsJsonVersion
+import software.amazon.smithy.rust.codegen.core.smithy.protocols.Ec2QueryProtocol
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.HttpBindingResolver
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.Protocol
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.RestJson
@@ -250,6 +251,34 @@ class ServerRestXmlProtocol(
         requestSpecModule.resolve("RequestSpec")
 
     override fun serverRouterRuntimeConstructor() = "new_rest_xml_router"
+
+    override fun serverContentTypeCheckNoModeledInput() = true
+}
+
+class ServerEc2QueryProtocol(
+    codegenContext: CodegenContext,
+) : Ec2QueryProtocol(codegenContext), ServerProtocol {
+    val runtimeConfig = codegenContext.runtimeConfig
+    override val protocolModulePath: String = "ec2_query"
+
+    override fun markerStruct() = ServerRuntimeType.protocol("Ec2Query", protocolModulePath, runtimeConfig)
+
+    override fun routerType() = ServerCargoDependency.smithyHttpServer(runtimeConfig).toType()
+        .resolve("protocol::ec2_query::router::Ec2QueryRouter")
+
+    override fun serverRouterRequestSpec(
+        operationShape: OperationShape,
+        operationName: String,
+        serviceName: String,
+        requestSpecModule: RuntimeType,
+    ): Writable = writable {
+        rust("""String::from("$serviceName.$operationName")""")
+    }
+
+    override fun serverRouterRequestSpecType(requestSpecModule: RuntimeType): RuntimeType =
+        RuntimeType.String
+
+    override fun serverRouterRuntimeConstructor() = "new_ec2_query_router"
 
     override fun serverContentTypeCheckNoModeledInput() = true
 }

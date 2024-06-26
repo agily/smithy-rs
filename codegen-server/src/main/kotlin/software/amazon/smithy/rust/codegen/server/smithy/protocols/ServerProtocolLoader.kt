@@ -7,6 +7,7 @@ package software.amazon.smithy.rust.codegen.server.smithy.protocols
 
 import software.amazon.smithy.aws.traits.protocols.AwsJson1_0Trait
 import software.amazon.smithy.aws.traits.protocols.AwsJson1_1Trait
+import software.amazon.smithy.aws.traits.protocols.Ec2QueryTrait
 import software.amazon.smithy.aws.traits.protocols.RestJson1Trait
 import software.amazon.smithy.aws.traits.protocols.RestXmlTrait
 import software.amazon.smithy.rust.codegen.core.rustlang.Writable
@@ -78,6 +79,10 @@ class ServerProtocolLoader(supportedProtocols: ProtocolMap<ServerProtocolGenerat
                     ServerAwsJsonFactory(
                         AwsJsonVersion.Json11,
                         additionalServerHttpBoundProtocolCustomizations = listOf(StreamPayloadSerializerCustomization()),
+                    ),
+                Ec2QueryTrait.ID to
+                    ServerEc2QueryFactory(
+                        additionalServerHttpBoundProtocolCustomizations = listOf(StreamPayloadSerializerCustomization())
                     ),
             )
     }

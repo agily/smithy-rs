@@ -95,8 +95,8 @@ abstract class QuerySerializerGenerator(private val codegenContext: CodegenConte
     private val smithyTypes = RuntimeType.smithyTypes(runtimeConfig)
     private val smithyQuery = RuntimeType.smithyQuery(runtimeConfig)
     private val serdeUtil = SerializerUtil(model, symbolProvider)
-    private val protocolFunctions = ProtocolFunctions(codegenContext)
-    private val codegenScope =
+    val protocolFunctions = ProtocolFunctions(codegenContext)
+    val codegenScope =
         arrayOf(
             "String" to RuntimeType.String,
             "Error" to serializerError,

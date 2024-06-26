@@ -40,6 +40,7 @@ object AttachValidationExceptionToConstrainedOperationInputsInAllowList {
             ShapeId.from("aws.protocoltests.json#JsonProtocol"),
             ShapeId.from("com.amazonaws.s3#AmazonS3"),
             ShapeId.from("com.amazonaws.ebs#Ebs"),
+            ShapeId.from("com.amazonaws.ec2#Ec2"),
             // These are only loaded in the classpath and need this model transformer, but we don't generate server
             // SDKs for them. Here they are for reference.
             // ShapeId.from("aws.protocoltests.restxml#RestXml"),

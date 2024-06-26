@@ -13,6 +13,8 @@ import software.amazon.smithy.model.shapes.ShapeId
 import software.amazon.smithy.model.traits.XmlNameTrait
 import software.amazon.smithy.rust.codegen.core.rustlang.RustWriter
 import software.amazon.smithy.rust.codegen.core.rustlang.rustBlock
+import software.amazon.smithy.rust.codegen.core.rustlang.rustBlockTemplate
+import software.amazon.smithy.rust.codegen.core.rustlang.rustTemplate
 import software.amazon.smithy.rust.codegen.core.smithy.CodegenContext
 import software.amazon.smithy.rust.codegen.core.smithy.RuntimeType
 import software.amazon.smithy.rust.codegen.core.util.getTrait
@@ -29,7 +31,14 @@ class Ec2QuerySerializerGenerator(codegenContext: CodegenContext) : QuerySeriali
     override fun MemberShape.isFlattened(): Boolean = true
 
     override fun operationOutputSerializer(operationShape: OperationShape): RuntimeType? {
-        TODO("Not yet implemented")
+        return protocolFunctions.serializeFn(operationShape, fnNameSuffix = "output") { fnName ->
+            rustBlockTemplate(
+                "pub fn $fnName(output: &i32) -> Result<String, ()>",
+                *codegenScope,
+            ) {
+                rustTemplate("Ok(\"output\".to_string())", *codegenScope)
+            }
+        }// TODO implement this
     }
 
     override fun serverErrorSerializer(shape: ShapeId): RuntimeType {

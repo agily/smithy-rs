@@ -85,7 +85,7 @@ where
     type Service = S;
     type Error = Error;
 
-    fn match_route(&self, request: &http::Request<B>) -> Result<S, Self::Error> {
+    async fn match_route(&self, request: &mut http::Request<B>) -> Result<S, Self::Error> {
         // The URI must be root,
         if request.uri() != "/" {
             return Err(Error::NotRootUrl);
