@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+use http::Error;
 use crate::rejection::MissingContentTypeReason;
 use aws_smithy_runtime_api::http::HttpError;
 use aws_smithy_xml::decode::XmlDecodeError;
+use aws_smithy_types::error::operation::SerializationError;
 use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ResponseRejection {
@@ -46,6 +48,18 @@ impl From<XmlDecodeError> for RequestRejection {
 
 impl From<()> for RequestRejection {
     fn from(_value: ()) -> Self {
+        Self::NotAcceptable
+    }
+}
+
+impl From<SerializationError> for RequestRejection{
+    fn from(_value: SerializationError) -> Self {
+        Self::NotAcceptable
+    }
+}
+
+impl From<http::Error> for RequestRejection{
+    fn from(_value: Error) -> Self {
         Self::NotAcceptable
     }
 }

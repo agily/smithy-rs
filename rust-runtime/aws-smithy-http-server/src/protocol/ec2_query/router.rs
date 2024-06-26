@@ -27,8 +27,6 @@ use http::header::ToStrError;
 use http::Request;
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 use quick_xml::Writer;
-// use http_body::Body as _;
-// use http_body::Body;
 use crate::extension::RuntimeErrorExtension;
 use crate::protocol::ec2_query::Ec2Query;
 use crate::protocol::rest;

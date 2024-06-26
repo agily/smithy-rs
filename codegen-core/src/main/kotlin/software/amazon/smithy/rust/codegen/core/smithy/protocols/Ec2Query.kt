@@ -47,7 +47,7 @@ open class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protoc
         Ec2QueryParserGenerator(codegenContext, ec2QueryErrors)
 
     override fun structuredDataSerializer(): StructuredDataSerializerGenerator =
-        Ec2QuerySerializerGenerator(codegenContext)
+        Ec2QuerySerializerGenerator(codegenContext, httpBindingResolver)
 
     override fun parseHttpErrorMetadata(operationShape: OperationShape): RuntimeType =
         ProtocolFunctions.crossOperationFn("parse_http_error_metadata") { fnName ->
