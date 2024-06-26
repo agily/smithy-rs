@@ -6,8 +6,8 @@
  */
 
 use bytes::Bytes;
-use convert_case::{Case, Casing};
 use futures_util::{StreamExt, TryStream, TryStreamExt};
+use heck::ToLowerCamelCase;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::fmt::Debug;
@@ -25,6 +25,8 @@ use crate::routing::{method_disallowed, Route, UNKNOWN_OPERATION_EXCEPTION};
 
 use http::header::ToStrError;
 use http::Request;
+use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
+use quick_xml::Writer;
 // use http_body::Body as _;
 // use http_body::Body;
 use crate::extension::RuntimeErrorExtension;
@@ -100,76 +102,126 @@ impl<S> Ec2QueryRouter<S> {
     }
 }
 
-#[derive(Debug)]
-struct Filter {
-    name: String,
-    values: Vec<String>,
+fn map_to_xml(map: &serde_json::Map<String, Value>) -> String {
+    let mut writer = Writer::new(Vec::new());
+
+    let action_name = map.get("Action").and_then(Value::as_str).unwrap_or("Response");
+    let root_name = format!("{}Response", action_name);
+
+    // Start root element
+    writer
+        .write_event(Event::Start(BytesStart::from_content(
+            root_name.as_str(),
+            root_name.len(),
+        )))
+        .unwrap();
+
+    for (key, value) in map.iter() {
+        if key != "Action" {
+            let key_transformed = if key == "Filter" || key == "InstanceId" {
+                key.to_string()
+            } else {
+                key.to_lower_camel_case()
+            };
+            append_xml_element(&mut writer, &key_transformed, value, "");
+        }
+    }
+
+    // End root element
+    writer.write_event(Event::End(BytesEnd::new(root_name))).unwrap();
+
+    String::from_utf8(writer.into_inner()).unwrap()
 }
 
-fn parse_query(query: &str) -> (String, Vec<Filter>, Vec<String>, HashMap<String, Vec<String>>)
-{
-    let mut action = None;
-    let mut filters = HashMap::new();
-    let mut instance_ids = Vec::new();
-    let mut data = HashMap::new();
-
-    for (key, value) in form_urlencoded::parse(query.as_bytes()).into_owned() {
-        if key == "Action" {
-            action = Some(value);
-        } else if key == "Version" {
-            // Игнорируем Version
-            continue;
-        } else if key.starts_with("Filter.") {
-            let parts: Vec<&str> = key.split('.').collect();
-            if parts.len() == 4 {
-                let index = parts[1].to_string();
-                let field = parts[2];
-                let filter = filters.entry(index).or_insert_with(|| Filter {
-                    name: String::new(),
-                    values: Vec::new(),
-                });
-                match field {
-                    "Name" => filter.name = value,
-                    "Value" => filter.values.push(value),
-                    _ => {}
-                }
+fn append_xml_element(writer: &mut Writer<Vec<u8>>, key: &str, value: &Value, parent: &str) {
+    if key.parse::<i32>().is_ok() {
+        // append_xml_element(writer, parent, value, parent);
+        // return;
+        match parent {
+            "Filter" => append_xml_element(writer, "Filter", value, "Filter"),
+            "Value" => append_xml_element(writer, "item", value, "Value"),
+            _ => {}
+        }
+        return;
+    }
+    match value {
+        Value::Object(map) => {
+            writer
+                .write_event(Event::Start(BytesStart::from_content(key, key.len())))
+                .unwrap();
+            for (k, v) in map.iter() {
+                let transformed_key = if key == "InstanceId" {
+                    "InstanceId".to_string()
+                } else if k == "Name" || k == "Value" {
+                    k.to_string()
+                } else {
+                    k.to_lower_camel_case()
+                };
+                append_xml_element(writer, &transformed_key, v, key);
             }
-        } else if key.starts_with("InstanceId.") {
-            instance_ids.push(value);
-        } else {
-            data.entry(key).or_insert_with(Vec::new).push(value);
+            writer.write_event(Event::End(BytesEnd::new(key))).unwrap();
+        }
+        Value::Array(arr) => {
+            let array_key = if key.starts_with("Filter") { "Filter" } else { key };
+            for v in arr {
+                append_xml_element(writer, array_key, v, key);
+            }
+        }
+        Value::String(s) => {
+            writer
+                .write_event(Event::Start(BytesStart::from_content(key, key.len())))
+                .unwrap();
+            writer.write_event(Event::Text(BytesText::new(s))).unwrap();
+            writer.write_event(Event::End(BytesEnd::new(key))).unwrap();
+        }
+        _ => {
+            // Handle other types if needed
         }
     }
-
-    let action = action.unwrap_or_else(|| "UnknownAction".to_string());
-    let filters = filters.into_values().collect();
-
-    (action, filters, instance_ids, data)
 }
 
-fn to_xml(action: &str, filters: Vec<Filter>, instance_ids: Vec<String>, data: HashMap<String, Vec<String>>) -> String {
-    let mut xml = format!("<{}Response>", action);
+struct QueryParser<'a> {
+    query: &'a str,
+}
 
-    for filter in filters {
-        xml.push_str(&format!("<Filter><Name>{}</Name>", filter.name));
-        for value in filter.values {
-            xml.push_str(&format!("<Value>{}</Value>", value));
+impl<'a> QueryParser<'a> {
+    pub fn new(query: &'a str) -> Self {
+        QueryParser { query }
+    }
+
+    pub fn parse(&self) -> serde_json::Map<String, Value> {
+        let mut map: serde_json::Map<String, Value> = serde_json::Map::new();
+
+        let pairs = self.query.split('&');
+        for pair in pairs {
+            let mut split = pair.splitn(2, '=');
+            if let (Some(key), Some(value)) = (split.next(), split.next()) {
+                let decoded_key = urlencoding::decode(key).expect("Failed to decode key").to_string();
+                let decoded_value = urlencoding::decode(value).expect("Failed to decode value").to_string();
+
+                self.insert_into_map(&mut map, decoded_key, decoded_value);
+            }
         }
-        xml.push_str("</Filter>");
+
+        map
     }
 
-    for instance_id in instance_ids {
-        xml.push_str(&format!("<InstanceId>{}</InstanceId>", instance_id));
-    }
+    fn insert_into_map(&self, map: &mut serde_json::Map<String, Value>, key: String, value: String) {
+        let parts: Vec<&str> = key.split('.').collect();
+        let mut current_map = map;
 
-    for (key, values) in data {
-        for value in values {
-            xml.push_str(&format!("<{}>{}</{}>", key, value, key));
+        for (i, part) in parts.iter().enumerate() {
+            if i == parts.len() - 1 {
+                current_map.insert(part.to_string(), Value::String(value.clone()));
+            } else {
+                current_map = current_map
+                    .entry(part.to_string())
+                    .or_insert_with(|| Value::Object(serde_json::Map::new()))
+                    .as_object_mut()
+                    .unwrap();
+            }
         }
     }
-
-    xml.push_str(&format!("</{}>", action));
-    xml
 }
 
 impl<B, S> Router<B> for Ec2QueryRouter<S>
@@ -196,24 +248,20 @@ where
         let s = hyper::body::to_bytes(request.body_mut())
             .await
             .map_err(|_| Error::NotFound)?;
-        
-        let target = dbg!(String::from_utf8_lossy(&s))
+
+        let target = String::from_utf8_lossy(&s)
             .split("&")
             .next()
             .unwrap()
             .replace("Action=", "");
-        
-        let (
-              action, 
-              filters, 
-              instance_ids, 
-              data
-          ) = parse_query(&String::from_utf8_lossy(&s));
-        
-        let xml = to_xml(&action, filters, instance_ids, data);
-        println!("{xml}");
-        let new_data = Bytes::from("");
-        
+        let q = String::from_utf8_lossy(&s);
+        let parser = QueryParser::new(q.as_ref());
+        let parsed_query = parser.parse();
+
+        let xml_string = map_to_xml(&parsed_query);
+
+        let new_data = Bytes::from(xml_string);
+
         let mut t = Request::builder().body(B::from(new_data)).unwrap();
 
         std::mem::swap(request, &mut t);
