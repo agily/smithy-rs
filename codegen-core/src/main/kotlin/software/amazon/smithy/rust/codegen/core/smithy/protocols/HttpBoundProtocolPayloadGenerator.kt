@@ -230,7 +230,7 @@ class HttpBoundProtocolPayloadGenerator(
             writer.rust("\"\"")
         } else {
             writer.rust(
-                "#T(&$shapeName)?",
+                "#T(&$shapeName).unwrap()",
                 serializer,
             )
         }

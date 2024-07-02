@@ -122,7 +122,7 @@ class Ec2QuerySerializerGenerator(codegenContext: CodegenContext, private val ht
         val structureSerializer =
             protocolFunctions.serializeFn(structureShape, fnNameSuffix = fnNameSuffix) { fnName ->
                 rustBlockTemplate(
-                    "pub fn $fnName(input: &#{Input}, writer: #{ElementWriter}) -> Result<(), #{Error}>",
+                    "pub fn $fnName(input: &#{Input}, writer: #{ElWriter}) -> Result<(), #{Error}>",
                     "Input" to structureSymbol,
                     *codegenScope,
                 ) {
@@ -274,7 +274,7 @@ class Ec2QuerySerializerGenerator(codegenContext: CodegenContext, private val ht
         val structureSerializer =
             protocolFunctions.serializeFn(unionShape) { fnName ->
                 rustBlockTemplate(
-                    "pub fn $fnName(input: &#{Input}, writer: #{ElementWriter}) -> Result<(), #{Error}>",
+                    "pub fn $fnName(input: &#{Input}, writer: #{ElWriter}) -> Result<(), #{Error}>",
                     "Input" to unionSymbol,
                     *codegenScope,
                 ) {

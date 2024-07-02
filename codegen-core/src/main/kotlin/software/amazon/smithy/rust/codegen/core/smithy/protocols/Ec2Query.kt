@@ -37,7 +37,7 @@ open class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protoc
                 .method("POST")
                 .uri(UriPattern.parse("/"))
                 .build(),
-            "application/x-www-form-urlencoded",
+            "application/x-www-form-urlencoded; charset=utf-8",
             "text/xml",
         )
 

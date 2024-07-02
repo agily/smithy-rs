@@ -92,6 +92,7 @@ abstract class QuerySerializerGenerator(private val codegenContext: CodegenConte
     private val target = codegenContext.target
     private val serviceShape = codegenContext.serviceShape
     private val serializerError = runtimeConfig.serializationError()
+    private val xml = RuntimeType.smithyXml(runtimeConfig)
     private val smithyTypes = RuntimeType.smithyTypes(runtimeConfig)
     private val smithyQuery = RuntimeType.smithyQuery(runtimeConfig)
     private val serdeUtil = SerializerUtil(model, symbolProvider)
@@ -103,8 +104,8 @@ abstract class QuerySerializerGenerator(private val codegenContext: CodegenConte
             "SdkBody" to RuntimeType.sdkBody(runtimeConfig),
             "QueryWriter" to smithyQuery.resolve("QueryWriter"),
             "QueryValueWriter" to smithyQuery.resolve("QueryValueWriter"),
-            "XmlWriter" to smithyQuery.resolve("XmlWriter"),
-            "ElementWriter" to smithyQuery.resolve("ElementWriter"),
+            "XmlWriter" to xml.resolve("encode::XmlWriter"),
+            "ElWriter" to xml.resolve("encode::ElWriter"),
         )
 
     abstract val protocolName: String
