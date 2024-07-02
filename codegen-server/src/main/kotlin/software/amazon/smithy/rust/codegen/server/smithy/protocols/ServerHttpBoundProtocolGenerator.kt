@@ -727,7 +727,7 @@ class ServerHttpBoundProtocolTraitImplGenerator(
                     """
                     #{SmithyHttpServer}::protocol::content_type_header_classifier_smithy(
                         &headers,
-                        Some("$expectedRequestContentType"),
+                        None,
                     )?;
                     input = #{parser}(bytes.as_ref(), input)?;
                     """,
@@ -843,7 +843,7 @@ class ServerHttpBoundProtocolTraitImplGenerator(
                                                     if !bytes.is_empty() {
                                                         #{SmithyHttpServer}::protocol::content_type_header_classifier_smithy(
                                                             &headers,
-                                                            Some("$expectedRequestContentType"),
+                                                            None,
                                                         )?;
                                                     }
                                                     """,

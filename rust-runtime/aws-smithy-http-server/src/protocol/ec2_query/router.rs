@@ -116,7 +116,7 @@ fn map_to_xml(map: &serde_json::Map<String, Value>) -> String {
 
     for (key, value) in map.iter() {
         if key != "Action" {
-            let key_transformed = if key == "Filter" || key == "InstanceId" {
+            let key_transformed = if key == "Filter" || key == "InstanceId" || key == "Address"  {
                 key.to_string()
             } else {
                 key.to_lower_camel_case()
@@ -257,9 +257,7 @@ where
         let parsed_query = parser.parse();
 
         let xml_string = map_to_xml(&parsed_query);
-
         let new_data = Bytes::from(xml_string);
-
         let mut t = Request::builder().body(B::from(new_data)).unwrap();
 
         std::mem::swap(request, &mut t);
