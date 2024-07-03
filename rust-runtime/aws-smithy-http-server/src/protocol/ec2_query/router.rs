@@ -103,41 +103,35 @@ impl<S> Ec2QueryRouter<S> {
 fn map_to_xml(map: &serde_json::Map<String, Value>) -> String {
     let mut writer = Writer::new(Vec::new());
 
-    let action_name = map.get("Action").and_then(Value::as_str).unwrap_or("Response");
-    let root_name = format!("{}Response", action_name);
+    let action_name = map.get("action").and_then(Value::as_str).expect("Missing `action` key.");
 
     // Start root element
     writer
         .write_event(Event::Start(BytesStart::from_content(
-            root_name.as_str(),
-            root_name.len(),
+            action_name,
+            action_name.len(),
         )))
         .unwrap();
 
     for (key, value) in map.iter() {
-        if key != "Action" {
-            let key_transformed = if key == "Filter" || key == "InstanceId" || key == "Address"  {
-                key.to_string()
-            } else {
-                key.to_lower_camel_case()
-            };
+        if key != "action" {
+            let key_transformed = key.to_ascii_lowercase();
             append_xml_element(&mut writer, &key_transformed, value, "");
         }
     }
 
     // End root element
-    writer.write_event(Event::End(BytesEnd::new(root_name))).unwrap();
+    writer.write_event(Event::End(BytesEnd::new(action_name))).unwrap();
 
     String::from_utf8(writer.into_inner()).unwrap()
 }
 
 fn append_xml_element(writer: &mut Writer<Vec<u8>>, key: &str, value: &Value, parent: &str) {
     if key.parse::<i32>().is_ok() {
-        // append_xml_element(writer, parent, value, parent);
-        // return;
         match parent {
-            "Filter" => append_xml_element(writer, "Filter", value, "Filter"),
-            "Value" => append_xml_element(writer, "item", value, "Value"),
+            "filter" => append_xml_element(writer, "filter", value, "filter"),
+            "value"  => append_xml_element(writer, "item", value, "value"),
+            "instanceeventwindowid" => append_xml_element(writer, "item", value, "value"),
             _ => {}
         }
         return;
@@ -148,19 +142,17 @@ fn append_xml_element(writer: &mut Writer<Vec<u8>>, key: &str, value: &Value, pa
                 .write_event(Event::Start(BytesStart::from_content(key, key.len())))
                 .unwrap();
             for (k, v) in map.iter() {
-                let transformed_key = if key == "InstanceId" {
-                    "InstanceId".to_string()
-                } else if k == "Name" || k == "Value" {
-                    k.to_string()
-                } else {
-                    k.to_lower_camel_case()
+                let transformed_key = if key.ends_with("id") || key.ends_with("ids") {
+                    key.to_string()
+                }else{
+                    k.to_ascii_lowercase()
                 };
                 append_xml_element(writer, &transformed_key, v, key);
             }
             writer.write_event(Event::End(BytesEnd::new(key))).unwrap();
         }
         Value::Array(arr) => {
-            let array_key = if key.starts_with("Filter") { "Filter" } else { key };
+            let array_key = if key.starts_with("filter") { "filter" } else { key };
             for v in arr {
                 append_xml_element(writer, array_key, v, key);
             }
@@ -197,7 +189,7 @@ impl<'a> QueryParser<'a> {
                 let decoded_key = urlencoding::decode(key).expect("Failed to decode key").to_string();
                 let decoded_value = urlencoding::decode(value).expect("Failed to decode value").to_string();
 
-                self.insert_into_map(&mut map, decoded_key, decoded_value);
+                self.insert_into_map(&mut map, decoded_key.to_ascii_lowercase(), decoded_value);
             }
         }
 
