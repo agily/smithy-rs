@@ -100,119 +100,6 @@ impl<S> Ec2QueryRouter<S> {
     }
 }
 
-fn map_to_xml(map: &serde_json::Map<String, Value>) -> String {
-    let mut writer = Writer::new(Vec::new());
-
-    let action_name = map.get("action").and_then(Value::as_str).expect("Missing `action` key.");
-
-    // Start root element
-    writer
-        .write_event(Event::Start(BytesStart::from_content(
-            action_name,
-            action_name.len(),
-        )))
-        .unwrap();
-
-    for (key, value) in map.iter() {
-        if key != "action" {
-            let key_transformed = key.to_ascii_lowercase();
-            append_xml_element(&mut writer, &key_transformed, value, "");
-        }
-    }
-
-    // End root element
-    writer.write_event(Event::End(BytesEnd::new(action_name))).unwrap();
-
-    String::from_utf8(writer.into_inner()).unwrap()
-}
-
-fn append_xml_element(writer: &mut Writer<Vec<u8>>, key: &str, value: &Value, parent: &str) {
-    if key.parse::<i32>().is_ok() {
-        match parent {
-            "filter" => append_xml_element(writer, "filter", value, "filter"),
-            "value"  => append_xml_element(writer, "item", value, "value"),
-            "instanceeventwindowid" => append_xml_element(writer, "item", value, "value"),
-            _ => {}
-        }
-        return;
-    }
-    match value {
-        Value::Object(map) => {
-            writer
-                .write_event(Event::Start(BytesStart::from_content(key, key.len())))
-                .unwrap();
-            for (k, v) in map.iter() {
-                let transformed_key = if key.ends_with("id") || key.ends_with("ids") {
-                    key.to_string()
-                }else{
-                    k.to_ascii_lowercase()
-                };
-                append_xml_element(writer, &transformed_key, v, key);
-            }
-            writer.write_event(Event::End(BytesEnd::new(key))).unwrap();
-        }
-        Value::Array(arr) => {
-            let array_key = if key.starts_with("filter") { "filter" } else { key };
-            for v in arr {
-                append_xml_element(writer, array_key, v, key);
-            }
-        }
-        Value::String(s) => {
-            writer
-                .write_event(Event::Start(BytesStart::from_content(key, key.len())))
-                .unwrap();
-            writer.write_event(Event::Text(BytesText::new(s))).unwrap();
-            writer.write_event(Event::End(BytesEnd::new(key))).unwrap();
-        }
-        _ => {
-            // Handle other types if needed
-        }
-    }
-}
-
-struct QueryParser<'a> {
-    query: &'a str,
-}
-
-impl<'a> QueryParser<'a> {
-    pub fn new(query: &'a str) -> Self {
-        QueryParser { query }
-    }
-
-    pub fn parse(&self) -> serde_json::Map<String, Value> {
-        let mut map: serde_json::Map<String, Value> = serde_json::Map::new();
-
-        let pairs = self.query.split('&');
-        for pair in pairs {
-            let mut split = pair.splitn(2, '=');
-            if let (Some(key), Some(value)) = (split.next(), split.next()) {
-                let decoded_key = urlencoding::decode(key).expect("Failed to decode key").to_string();
-                let decoded_value = urlencoding::decode(value).expect("Failed to decode value").to_string();
-
-                self.insert_into_map(&mut map, decoded_key.to_ascii_lowercase(), decoded_value);
-            }
-        }
-
-        map
-    }
-
-    fn insert_into_map(&self, map: &mut serde_json::Map<String, Value>, key: String, value: String) {
-        let parts: Vec<&str> = key.split('.').collect();
-        let mut current_map = map;
-
-        for (i, part) in parts.iter().enumerate() {
-            if i == parts.len() - 1 {
-                current_map.insert(part.to_string(), Value::String(value.clone()));
-            } else {
-                current_map = current_map
-                    .entry(part.to_string())
-                    .or_insert_with(|| Value::Object(serde_json::Map::new()))
-                    .as_object_mut()
-                    .unwrap();
-            }
-        }
-    }
-}
 
 impl<B, S> Router<B> for Ec2QueryRouter<S>
 where
@@ -245,11 +132,8 @@ where
             .unwrap()
             .replace("Action=", "");
         let q = String::from_utf8_lossy(&s);
-        let parser = QueryParser::new(q.as_ref());
-        let parsed_query = parser.parse();
 
-        let xml_string = map_to_xml(&parsed_query);
-        let new_data = Bytes::from(xml_string);
+        let new_data = Bytes::from(q.to_string());
         let mut t = Request::builder().body(B::from(new_data)).unwrap();
 
         std::mem::swap(request, &mut t);

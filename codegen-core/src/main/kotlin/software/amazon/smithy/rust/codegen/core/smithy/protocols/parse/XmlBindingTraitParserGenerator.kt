@@ -753,7 +753,7 @@ class XmlBindingTraitParserGenerator(
         target == CodegenTarget.SERVER && shape.hasTrait<EnumTrait>()
 
     private fun MemberShape.xmlName(): XmlName {
-        return XmlName(xmlIndex.memberName(this).lowercase()) // crutch for ec2 query protocol
+        return XmlName(xmlIndex.memberName(this))
     }
 
     private fun MemberShape.isFlattened(): Boolean {
