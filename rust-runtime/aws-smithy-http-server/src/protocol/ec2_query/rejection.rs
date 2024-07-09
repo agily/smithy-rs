@@ -13,6 +13,8 @@ use thiserror::Error;
 pub enum ResponseRejection {
     #[error("error building HTTP response: {0}")]
     HttpBuild(#[from] http::Error),
+    #[error("error common")]
+    Common,
 }
 
 #[derive(Debug, Error)]
@@ -21,6 +23,8 @@ pub enum RequestRejection {
     BufferHttpBodyBytes(crate::Error),
     #[error("request contains invalid value for `Accept` header")]
     NotAcceptable,
+    #[error("request does not adhere to modeled constraints: {0}")]
+    ConstraintViolation(String),
 }
 
 impl From<std::convert::Infallible> for RequestRejection {
@@ -55,6 +59,12 @@ impl From<()> for RequestRejection {
 impl From<SerializationError> for RequestRejection{
     fn from(_value: SerializationError) -> Self {
         Self::NotAcceptable
+    }
+}
+
+impl From<SerializationError> for ResponseRejection{
+    fn from(_value: SerializationError) -> Self {
+        Self::Common
     }
 }
 

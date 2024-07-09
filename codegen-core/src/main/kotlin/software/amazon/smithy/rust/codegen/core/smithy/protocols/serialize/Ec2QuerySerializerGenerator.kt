@@ -398,7 +398,38 @@ class Ec2QuerySerializerGenerator(codegenContext: CodegenContext, private val ht
     }
 
     override fun serverErrorSerializer(shape: ShapeId): RuntimeType {
-        TODO("Not yet implemented")
+        val errorShape = model.expectShape(shape, StructureShape::class.java)
+        val xmlMembers =
+            httpBindingResolver.errorResponseBindings(shape)
+                .filter { it.location == HttpLocation.DOCUMENT }
+                .map { it.member }
+        return protocolFunctions.serializeFn(errorShape, fnNameSuffix = "error") { fnName ->
+            rustBlockTemplate(
+                "pub fn $fnName(error: &#{target}) -> Result<String, #{Error}>",
+                *codegenScope, "target" to symbolProvider.toSymbol(errorShape),
+            ) {
+                rust("let mut out = String::new();")
+                // Create a scope for writer. This ensures that:
+                // - The writer is dropped before returning the string
+                // - All closing tags get written
+                rustBlock("") {
+                    rustTemplate(
+                        """
+                        let mut writer = #{XmlWriter}::new(&mut out);
+                        ##[allow(unused_mut)]
+                        let mut root = writer.start_el("Error")${errorShape.xmlNamespace(root = true).apply()};
+                        """,
+                        *codegenScope,
+                    )
+                    serializeStructure(
+                        errorShape,
+                        XmlMemberIndex.fromMembers(xmlMembers),
+                        Ctx.Element("root", "error"),
+                    )
+                }
+                rustTemplate("Ok(out)", *codegenScope)
+            }
+        }
     }
 
     override fun RustWriter.serializeCollection(
