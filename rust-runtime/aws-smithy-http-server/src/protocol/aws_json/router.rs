@@ -137,19 +137,20 @@ mod tests {
 
         // Valid request, should match.
         router
-            .match_route(&req(&Method::POST, "/", Some(headers.clone())))
+            .match_route(&mut req(&Method::POST, "/", Some(headers.clone())))
+            .await
             .unwrap();
 
         // No headers, should return `MissingHeader`.
-        let res = router.match_route(&req(&Method::POST, "/", None));
+        let res = router.match_route(&mut req(&Method::POST, "/", None)).await;
         assert_eq!(res.unwrap_err().to_string(), Error::MissingHeader.to_string());
 
         // Wrong HTTP method, should return `MethodNotAllowed`.
-        let res = router.match_route(&req(&Method::GET, "/", Some(headers.clone())));
+        let res = router.match_route(&mut req(&Method::GET, "/", Some(headers.clone()))).await;
         assert_eq!(res.unwrap_err().to_string(), Error::MethodNotAllowed.to_string());
 
         // Wrong URI, should return `NotRootUrl`.
-        let res = router.match_route(&req(&Method::POST, "/something", Some(headers)));
+        let res = router.match_route(&mut req(&Method::POST, "/something", Some(headers))).await;
         assert_eq!(res.unwrap_err().to_string(), Error::NotRootUrl.to_string());
     }
 }

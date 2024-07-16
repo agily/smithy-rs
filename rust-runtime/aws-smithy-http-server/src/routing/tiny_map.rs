@@ -73,20 +73,10 @@ where
     K: Hash + Eq,
 {
     fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
-        let mut vec = Vec::with_capacity(CUTOFF);
-        let mut iter = iter.into_iter().enumerate();
-
-        // Populate the `Vec`
-        while let Some((index, pair)) = iter.next() {
-            vec.push(pair);
-
-            // If overflow `CUTOFF` then return a `HashMap` instead
-            if index == CUTOFF {
-                let inner = TinyMapInner::HashMap(vec.into_iter().chain(iter.map(|(_, pair)| pair)).collect());
-                return TinyMap { inner };
-            }
+        let vec: Vec<(K, V)> = iter.into_iter().collect();
+        if vec.len() > CUTOFF {
+            return TinyMap { inner: TinyMapInner::HashMap(vec.into_iter().collect()) }
         }
-
         TinyMap {
             inner: TinyMapInner::Vec(vec),
         }
