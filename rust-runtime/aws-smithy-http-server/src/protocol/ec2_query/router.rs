@@ -125,7 +125,7 @@ where
         let s = hyper::body::to_bytes(request.body_mut())
             .await
             .map_err(|_| Error::NotFound)?;
-
+        let header = request.headers();
         let target = String::from_utf8_lossy(&s)
             .split("&")
             .next()
@@ -134,8 +134,15 @@ where
         let q = String::from_utf8_lossy(&s);
 
         let new_data = Bytes::from(q.to_string());
-        let mut t = Request::builder().body(B::from(new_data)).unwrap();
+        
+        let mut t = Request::builder();
 
+        for (name, value) in header {
+            t = t.header(name, value);
+        }
+        
+        let mut t = t.body(B::from(new_data)).unwrap();
+        
         std::mem::swap(request, &mut t);
         // Lookup in the `TinyMap` for a route for the target.
         let route = self.routes.get(&format!("Ec2.{target}")).ok_or(Error::NotFound)?;
