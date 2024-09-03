@@ -145,7 +145,7 @@ where
         
         std::mem::swap(request, &mut t);
         // Lookup in the `TinyMap` for a route for the target.
-        let route = self.routes.get(&format!("Ec2.{target}")).ok_or(Error::NotFound)?;
+        let route = self.routes.get(&target).ok_or(Error::NotFound)?;
 
         Ok(route.clone())
     }
