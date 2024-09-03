@@ -112,27 +112,31 @@ where
     type Error = Error;
 
     async fn match_route(&self, request: &mut http::Request<B>) -> Result<S, Self::Error> {
+        dbg!(1);
         // The URI must be root,
         if request.uri() != "/" {
             return Err(Error::NotRootUrl);
         }
-
+        dbg!(2);
         // Only `Method::POST` is allowed.
         if request.method() != http::Method::POST {
             return Err(Error::MethodNotAllowed);
         }
-
+        dbg!(3);
         let s = hyper::body::to_bytes(request.body_mut())
             .await
             .map_err(|_| Error::NotFound)?;
+        dbg!(4);
         let header = request.headers();
+        dbg!(5);
         let target = String::from_utf8_lossy(&s)
             .split("&")
             .next()
             .unwrap()
             .replace("Action=", "");
+        dbg!(&target);
         let q = String::from_utf8_lossy(&s);
-
+        dbg!(&q);
         let new_data = Bytes::from(q.to_string());
         
         let mut t = Request::builder();
