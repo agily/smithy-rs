@@ -80,7 +80,8 @@ val allCodegenTests = "../codegen-core/common-test-models".let { commonModels ->
 //            imports = listOf("$commonModels/misc.smithy"),
 //        ),
 //        CodegenTest("com.amazonaws.ebs#Ebs", "ebs", imports = listOf("$commonModels/ebs.json")),
-        CodegenTest("com.amazonaws.ec2#Ec2", "ec2", imports = listOf("$commonModels/ec2.json")),
+//         CodegenTest("com.amazonaws.ec2#Ec2", "ec2", imports = listOf("$commonModels/ec2.json")), //return if need
+        CodegenTest("com.amazonaws.sts#AWSSecurityTokenServiceV20110615", "sts", imports = listOf("$commonModels/sts.json")),
 
 //        CodegenTest("com.amazonaws.s3#AmazonS3", "s3"),
 //        CodegenTest(
