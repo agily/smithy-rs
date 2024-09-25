@@ -80,8 +80,13 @@ val allCodegenTests = "../codegen-core/common-test-models".let { commonModels ->
 //            imports = listOf("$commonModels/misc.smithy"),
 //        ),
 //        CodegenTest("com.amazonaws.ebs#Ebs", "ebs", imports = listOf("$commonModels/ebs.json")),
+
 //         CodegenTest("com.amazonaws.ec2#Ec2", "ec2", imports = listOf("$commonModels/ec2.json")), //return if need
-        CodegenTest("com.amazonaws.sts#AWSSecurityTokenServiceV20110615", "sts", imports = listOf("$commonModels/sts.json")),
+//        CodegenTest("com.amazonaws.sts#AWSSecurityTokenServiceV20110615", "sts", imports = listOf("$commonModels/sts.json")),
+//        CodegenTest("com.amazonaws.iam#AWSIdentityManagementV20100508", "iam", imports = listOf("$commonModels/iam.json")),
+//        CodegenTest("com.amazonaws.elasticloadbalancing#ElasticLoadBalancing_v7", "elasticloadbalancing", imports = listOf("$commonModels/elasticloadbalancing.json")),
+//        CodegenTest("com.amazonaws.elasticloadbalancingv2#ElasticLoadBalancing_v10", "elasticloadbalancingv2", imports = listOf("$commonModels/elasticloadbalancingv2.json")),
+        CodegenTest("com.amazonaws.autoscaling#AutoScaling_2011_01_01", "autoscaling", imports = listOf("$commonModels/autoscaling.json")),
 
 //        CodegenTest("com.amazonaws.s3#AmazonS3", "s3"),
 //        CodegenTest(
