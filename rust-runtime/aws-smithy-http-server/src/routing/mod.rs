@@ -82,8 +82,8 @@ pub trait Router<B> {
 ///
 /// The `Protocol` parameter is used to determine the serialization of errors.
 pub struct RoutingService<R, Protocol> {
-    router: R,
-    _protocol: PhantomData<Protocol>,
+    pub router: R,
+    pub _protocol: PhantomData<Protocol>,
 }
 
 impl<R, P> fmt::Debug for RoutingService<R, P>
