@@ -141,6 +141,8 @@ data class RuntimeType(val path: String, val dependency: RustDependency? = null)
             )
         }
 
+    fun toDevDependencyType(): RuntimeType = copy(dependency = dependency?.toDevDependency())
+
     /**
      * Convert this [RuntimeType] into a [Symbol].
      *
@@ -167,9 +169,7 @@ data class RuntimeType(val path: String, val dependency: RustDependency? = null)
      * val http = CargoDependency.http.resolve("Request")
      * ```
      */
-    fun resolve(subPath: String): RuntimeType {
-        return copy(path = "$path::$subPath")
-    }
+    fun resolve(subPath: String): RuntimeType = copy(path = "$path::$subPath")
 
     /**
      * Returns the fully qualified name for this type
@@ -272,44 +272,43 @@ data class RuntimeType(val path: String, val dependency: RustDependency? = null)
         val U64 = std.resolve("primitive::u64")
         val Vec = std.resolve("vec::Vec")
 
+        // primitive types
+        val StaticStr = RuntimeType("&'static str")
+
         // external cargo dependency types
         val Bytes = CargoDependency.Bytes.toType().resolve("Bytes")
         val Http = CargoDependency.Http.toType()
         val HttpBody = CargoDependency.HttpBody.toType()
-        val HttpHeaderMap = Http.resolve("HeaderMap")
         val HttpRequest = Http.resolve("Request")
         val HttpRequestBuilder = Http.resolve("request::Builder")
         val HttpResponse = Http.resolve("Response")
         val HttpResponseBuilder = Http.resolve("response::Builder")
         val Hyper = CargoDependency.Hyper.toType()
         val LazyStatic = CargoDependency.LazyStatic.toType()
-        val Md5 = CargoDependency.Md5.toType()
         val OnceCell = CargoDependency.OnceCell.toType()
         val PercentEncoding = CargoDependency.PercentEncoding.toType()
         val PrettyAssertions = CargoDependency.PrettyAssertions.toType()
         val Regex = CargoDependency.Regex.toType()
-        val RegexLite = CargoDependency.RegexLite.toType()
+        val Serde = CargoDependency.Serde.toType()
+        val SerdeDeserialize = Serde.resolve("Deserialize")
+        val SerdeSerialize = Serde.resolve("Serialize")
         val Tokio = CargoDependency.Tokio.toType()
         val TokioStream = CargoDependency.TokioStream.toType()
         val Tower = CargoDependency.Tower.toType()
         val Tracing = CargoDependency.Tracing.toType()
         val TracingTest = CargoDependency.TracingTest.toType()
+        val TracingSubscriber = CargoDependency.TracingSubscriber.toType()
 
         // codegen types
         val ConstrainedTrait = RuntimeType("crate::constrained::Constrained", InlineDependency.constrained())
         val MaybeConstrained = RuntimeType("crate::constrained::MaybeConstrained", InlineDependency.constrained())
 
-        // serde types. Gated behind `CfgUnstable`.
-        val Serde = CargoDependency.Serde.toType()
-        val SerdeSerialize = Serde.resolve("Serialize")
-        val SerdeDeserialize = Serde.resolve("Deserialize")
-
         // smithy runtime types
         fun smithyAsync(runtimeConfig: RuntimeConfig) = CargoDependency.smithyAsync(runtimeConfig).toType()
 
-        fun smithyChecksums(runtimeConfig: RuntimeConfig) = CargoDependency.smithyChecksums(runtimeConfig).toType()
+        fun smithyCbor(runtimeConfig: RuntimeConfig) = CargoDependency.smithyCbor(runtimeConfig).toType()
 
-        fun smithyCompression(runtimeConfig: RuntimeConfig) = CargoDependency.smithyCompression(runtimeConfig).toType()
+        fun smithyChecksums(runtimeConfig: RuntimeConfig) = CargoDependency.smithyChecksums(runtimeConfig).toType()
 
         fun smithyEventStream(runtimeConfig: RuntimeConfig) = CargoDependency.smithyEventStream(runtimeConfig).toType()
 
@@ -441,7 +440,7 @@ data class RuntimeType(val path: String, val dependency: RustDependency? = null)
             forInlineDependency(InlineDependency.awsQueryCompatibleErrors(runtimeConfig))
 
         fun defaultAuthPlugin(runtimeConfig: RuntimeConfig) =
-            RuntimeType.forInlineDependency(InlineDependency.defaultAuthPlugin(runtimeConfig))
+            forInlineDependency(InlineDependency.defaultAuthPlugin(runtimeConfig))
                 .resolve("DefaultAuthOptionsPlugin")
 
         fun labelFormat(
@@ -499,9 +498,11 @@ data class RuntimeType(val path: String, val dependency: RustDependency? = null)
             return smithyTypes(runtimeConfig).resolve("date_time::Format::$timestampFormat")
         }
 
+        fun smithyRuntimeTestUtil(runtimeConfig: RuntimeConfig) =
+            CargoDependency.smithyRuntimeTestUtil(runtimeConfig).toType().resolve("client::http::test_util")
+
         fun captureRequest(runtimeConfig: RuntimeConfig) =
-            CargoDependency.smithyRuntimeTestUtil(runtimeConfig).toType()
-                .resolve("client::http::test_util::capture_request")
+            smithyRuntimeTestUtil(runtimeConfig).resolve("capture_request")
 
         fun forInlineDependency(inlineDependency: InlineDependency) =
             RuntimeType("crate::${inlineDependency.name}", inlineDependency)
@@ -516,6 +517,8 @@ data class RuntimeType(val path: String, val dependency: RustDependency? = null)
         )
 
         // inlinable types
+        fun cborErrors(runtimeConfig: RuntimeConfig) = forInlineDependency(InlineDependency.cborErrors(runtimeConfig))
+
         fun ec2QueryErrors(runtimeConfig: RuntimeConfig) =
             forInlineDependency(InlineDependency.ec2QueryErrors(runtimeConfig))
 

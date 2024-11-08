@@ -15,6 +15,7 @@ import software.amazon.smithy.model.shapes.ShapeId
 import software.amazon.smithy.rust.codegen.core.util.orNull
 import java.util.Optional
 import java.util.logging.Logger
+import kotlin.streams.toList
 
 private const val SERVICE = "service"
 private const val MODULE_NAME = "module"
@@ -96,13 +97,12 @@ open class CoreRustSettings(
      * @return Returns the found `Service`
      * @throws CodegenException if the service is invalid or not found
      */
-    fun getService(model: Model): ServiceShape {
-        return model
+    fun getService(model: Model): ServiceShape =
+        model
             .getShape(service)
             .orElseThrow { CodegenException("Service shape not found: $service") }
             .asServiceShape()
             .orElseThrow { CodegenException("Shape is not a service: $service") }
-    }
 
     companion object {
         private val LOGGER: Logger = Logger.getLogger(CoreRustSettings::class.java.name)

@@ -10,6 +10,7 @@ import software.amazon.smithy.codegen.core.SymbolDependencyContainer
 import software.amazon.smithy.rust.codegen.core.smithy.ConstrainedModule
 import software.amazon.smithy.rust.codegen.core.smithy.RuntimeConfig
 import software.amazon.smithy.rust.codegen.core.smithy.RuntimeType
+import software.amazon.smithy.rust.codegen.core.util.PANIC
 import software.amazon.smithy.rust.codegen.core.util.dq
 import java.nio.file.Path
 
@@ -41,6 +42,12 @@ sealed class RustDependency(open val name: String) : SymbolDependencyContainer {
         ) + dependencies().flatMap { it.dependencies }
     }
 
+    open fun toDevDependency(): RustDependency =
+        when (this) {
+            is CargoDependency -> this.toDevDependency()
+            is InlineDependency -> PANIC("it does not make sense for an inline dependency to be a dev-dependency")
+        }
+
     companion object {
         private const val PROPERTY_KEY = "rustdep"
 
@@ -71,9 +78,7 @@ class InlineDependency(
         return renderer.hashCode().toString()
     }
 
-    override fun dependencies(): List<RustDependency> {
-        return extraDependencies
-    }
+    override fun dependencies(): List<RustDependency> = extraDependencies
 
     fun key() = "${module.fullyQualifiedPath()}::$name"
 
@@ -142,6 +147,14 @@ class InlineDependency(
                 CargoDependency.smithyTypes(runtimeConfig),
             )
 
+        fun cborErrors(runtimeConfig: RuntimeConfig): InlineDependency =
+            forInlineableRustFile(
+                "cbor_errors",
+                CargoDependency.smithyCbor(runtimeConfig),
+                CargoDependency.smithyRuntimeApi(runtimeConfig),
+                CargoDependency.smithyTypes(runtimeConfig),
+            )
+
         fun ec2QueryErrors(runtimeConfig: RuntimeConfig): InlineDependency =
             forInlineableRustFile("ec2_query_errors", CargoDependency.smithyXml(runtimeConfig))
 
@@ -160,6 +173,12 @@ class InlineDependency(
             )
 
         fun constrained(): InlineDependency = forRustFile(ConstrainedModule, "/inlineable/src/constrained.rs")
+
+        fun sdkFeatureTracker(runtimeConfig: RuntimeConfig): InlineDependency =
+            forInlineableRustFile(
+                "sdk_feature_tracker",
+                CargoDependency.smithyRuntime(runtimeConfig),
+            )
     }
 }
 
@@ -170,7 +189,7 @@ data class Feature(val name: String, val default: Boolean, val deps: List<String
 val DEV_ONLY_FEATURES = setOf("test-util")
 
 /**
- * A dependency on an internal or external Cargo Crate
+ * A dependency on an internal or external Cargo crate
  */
 data class CargoDependency(
     override val name: String,
@@ -194,7 +213,7 @@ data class CargoDependency(
         return copy(features = features.toMutableSet().apply { add(feature) })
     }
 
-    fun toDevDependency() = copy(scope = DependencyScope.Dev)
+    override fun toDevDependency() = copy(scope = DependencyScope.Dev)
 
     override fun version(): String =
         when (location) {
@@ -215,7 +234,7 @@ data class CargoDependency(
             }
         }
         with(features) {
-            if (!isEmpty()) {
+            if (isNotEmpty()) {
                 attribs["features"] = this
             }
         }
@@ -245,7 +264,7 @@ data class CargoDependency(
             )
         }
         with(features) {
-            if (!isEmpty()) {
+            if (isNotEmpty()) {
                 attribs.add("features = [${joinToString(",") { it.dq() }}]")
             }
         }
@@ -253,14 +272,9 @@ data class CargoDependency(
         return "$name = { ${attribs.joinToString(", ")} }"
     }
 
-    fun toType(): RuntimeType {
-        return RuntimeType("::$rustName", this)
-    }
+    fun toType() = RuntimeType("::$rustName", this)
 
     companion object {
-        // Forces AHash to be a later version that avoids
-        // https://github.com/tkaitchuck/aHash/issues/200
-        val AHash: CargoDependency = CargoDependency("ahash", CratesIo("0.8.11"), defaultFeatures = false)
         val Bytes: CargoDependency = CargoDependency("bytes", CratesIo("1.4.0"))
         val BytesUtils: CargoDependency = CargoDependency("bytes-utils", CratesIo("0.1.0"))
         val FastRand: CargoDependency = CargoDependency("fastrand", CratesIo("2.0.0"))
@@ -285,6 +299,7 @@ data class CargoDependency(
         val Approx: CargoDependency = CargoDependency("approx", CratesIo("0.5.1"), DependencyScope.Dev)
         val AsyncStd: CargoDependency = CargoDependency("async-std", CratesIo("1.12.0"), DependencyScope.Dev)
         val AsyncStream: CargoDependency = CargoDependency("async-stream", CratesIo("0.3.0"), DependencyScope.Dev)
+        val Ciborium: CargoDependency = CargoDependency("ciborium", CratesIo("0.2"), DependencyScope.Dev)
         val Criterion: CargoDependency = CargoDependency("criterion", CratesIo("0.5.0"), DependencyScope.Dev)
         val FuturesCore: CargoDependency = CargoDependency("futures-core", CratesIo("0.3.25"), DependencyScope.Dev)
         val FuturesUtil: CargoDependency =
@@ -293,6 +308,7 @@ data class CargoDependency(
         val Hound: CargoDependency = CargoDependency("hound", CratesIo("3.4.0"), DependencyScope.Dev)
         val PrettyAssertions: CargoDependency =
             CargoDependency("pretty_assertions", CratesIo("1.3.0"), DependencyScope.Dev)
+        val Proptest: CargoDependency = CargoDependency("proptest", CratesIo("1"), DependencyScope.Dev)
         val SerdeJson: CargoDependency = CargoDependency("serde_json", CratesIo("1.0.0"), DependencyScope.Dev)
         val Smol: CargoDependency = CargoDependency("smol", CratesIo("1.2.0"), DependencyScope.Dev)
         val TempFile: CargoDependency = CargoDependency("tempfile", CratesIo("3.2.0"), DependencyScope.Dev)
@@ -336,6 +352,8 @@ data class CargoDependency(
             CargoDependency("http-body-1x", CratesIo("1"), `package` = "http-body", optional = true)
 
         fun smithyAsync(runtimeConfig: RuntimeConfig) = runtimeConfig.smithyRuntimeCrate("smithy-async")
+
+        fun smithyCbor(runtimeConfig: RuntimeConfig) = runtimeConfig.smithyRuntimeCrate("smithy-cbor")
 
         fun smithyChecksums(runtimeConfig: RuntimeConfig) = runtimeConfig.smithyRuntimeCrate("smithy-checksums")
 

@@ -101,7 +101,7 @@ impl From<(u64, Duration)> for Throughput {
 #[derive(Copy, Clone, Debug, Ord, PartialOrd, Eq, PartialEq)]
 enum BinLabel {
     // IMPORTANT: The order of these enums matters since it represents their priority:
-    // Pending > TransferredBytes > NoPolling > Empty
+    // TransferredBytes > Pending > NoPolling > Empty
     //
     /// There is no data in this bin.
     Empty,
@@ -109,13 +109,11 @@ enum BinLabel {
     /// No polling took place during this bin.
     NoPolling,
 
+    /// The user/remote was not providing/consuming data fast enough during this bin.
+    Pending,
+
     /// This many bytes were transferred during this bin.
     TransferredBytes,
-
-    /// The user/remote was not providing/consuming data fast enough during this bin.
-    ///
-    /// The number is the number of bytes transferred, if this replaced TransferredBytes.
-    Pending,
 }
 
 /// Represents a bin (or a cell) in a linear grid that represents a small chunk of time.
@@ -139,8 +137,8 @@ impl Bin {
 
     fn merge(&mut self, other: Bin) -> &mut Self {
         // Assign values based on this priority order (highest priority higher up):
-        //   1. Pending
-        //   2. TransferredBytes
+        //   1. TransferredBytes
+        //   2. Pending
         //   3. NoPolling
         //   4. Empty
         self.label = if other.label > self.label {
@@ -181,6 +179,7 @@ struct LogBuffer<const N: usize> {
     // polling gap. Once the length reaches N, it will never change again.
     length: usize,
 }
+
 impl<const N: usize> LogBuffer<N> {
     fn new() -> Self {
         Self {
@@ -246,6 +245,11 @@ impl<const N: usize> LogBuffer<N> {
             }
         }
         counts
+    }
+
+    /// If this LogBuffer is empty, returns `true`. Else, returns `false`.
+    fn is_empty(&self) -> bool {
+        self.length == 0
     }
 }
 
@@ -334,7 +338,11 @@ impl ThroughputLogs {
 
     fn push(&mut self, now: SystemTime, value: Bin) {
         self.catch_up(now);
-        self.buffer.tail_mut().merge(value);
+        if self.buffer.is_empty() {
+            self.buffer.push(value)
+        } else {
+            self.buffer.tail_mut().merge(value);
+        }
         self.buffer.fill_gaps();
     }
 
@@ -399,6 +407,14 @@ impl ThroughputLogs {
 mod test {
     use super::*;
     use std::time::Duration;
+
+    #[test]
+    fn test_log_buffer_bin_label_priority() {
+        use BinLabel::*;
+        assert!(Empty < NoPolling);
+        assert!(NoPolling < Pending);
+        assert!(Pending < TransferredBytes);
+    }
 
     #[test]
     fn test_throughput_eq() {
@@ -511,7 +527,7 @@ mod test {
         assert_eq!(ThroughputReport::NoPolling, report);
     }
 
-    // Transferred bytes MUST take priority over pending
+    // Transferred bytes MUST take priority over pending when reporting throughput
     #[test]
     fn mixed_bag_mostly_pending() {
         let start = SystemTime::UNIX_EPOCH;
@@ -551,5 +567,37 @@ mod test {
 
         let report = logs.report(start + Duration::from_millis(999));
         assert_eq!(ThroughputReport::Pending, report);
+    }
+
+    #[test]
+    fn test_first_push_succeeds_although_time_window_has_not_elapsed() {
+        let t0 = SystemTime::UNIX_EPOCH;
+        let t1 = t0 + Duration::from_secs(1);
+        let mut tl = ThroughputLogs::new(Duration::from_secs(1), t1);
+
+        tl.push_pending(t0);
+    }
+
+    #[test]
+    fn test_label_transferred_bytes_should_not_be_overwritten_by_pending() {
+        let start = SystemTime::UNIX_EPOCH;
+        // Each `Bin`'s resolution is 100ms (1s / BIN_COUNT), where `BIN_COUNT` is 10
+        let mut logs = ThroughputLogs::new(Duration::from_secs(1), start);
+
+        // push `TransferredBytes` and then `Pending` in the same first `Bin`
+        logs.push_bytes_transferred(start + Duration::from_millis(10), 10);
+        logs.push_pending(start + Duration::from_millis(20));
+
+        let BinCounts {
+            empty,
+            no_polling,
+            transferred,
+            pending,
+        } = logs.buffer.counts();
+
+        assert_eq!(9, empty);
+        assert_eq!(0, no_polling);
+        assert_eq!(1, transferred); // `transferred` should still be there
+        assert_eq!(0, pending); // while `pending` should cease to exist, failing to overwrite `transferred`
     }
 }

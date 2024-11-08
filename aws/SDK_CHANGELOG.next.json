@@ -6,79 +6,7 @@
   "smithy-rs": [],
   "aws-sdk-rust": [
     {
-      "message": "Add support for v1 `http_body::Body` to `aws_smithy_types::byte_stream::bytestream_util::PathBody`.",
-      "meta": {
-        "bug": false,
-        "breaking": false,
-        "tada": false
-      },
-      "author": "Velfi",
-      "references": [
-        "smithy-rs#1925",
-        "smithy-rs#3673"
-      ],
-      "since-commit": "052b4dadc06354e673f6a642487871d5f50d135a",
-      "age": 4
-    },
-    {
-      "message": "Fix S3 ListParts API paginator infinite loop.",
-      "meta": {
-        "bug": true,
-        "breaking": false,
-        "tada": false
-      },
-      "author": "landonxjames",
-      "references": [
-        "aws-sdk-rust#1143"
-      ],
-      "since-commit": "052b4dadc06354e673f6a642487871d5f50d135a",
-      "age": 4
-    },
-    {
-      "message": "Stalled stream protection will no longer be applied to the following Lambda operations: [Invoke], [InvokeAsync], [InvokeWithResponseStream].\n\n[Invoke]: https://docs.rs/aws-sdk-lambda/latest/aws_sdk_lambda/client/struct.Client.html#method.invoke\n[InvokeAsync]: https://docs.rs/aws-sdk-lambda/latest/aws_sdk_lambda/client/struct.Client.html#method.invoke_async\n[InvokeWithResponseStream]: https://docs.rs/aws-sdk-lambda/latest/aws_sdk_lambda/client/struct.Client.html#method.invoke_with_response_stream\n",
-      "meta": {
-        "bug": true,
-        "breaking": false,
-        "tada": false
-      },
-      "author": "Velfi",
-      "references": [
-        "aws-sdk-rust#1166",
-        "smithy-rs#3639"
-      ],
-      "since-commit": "57ed310e6d21041eb36d825c50032295eef0b630",
-      "age": 2
-    },
-    {
-      "message": "Add documentation on the default configuration to `from_env`, `load_from_env`, `defaults`, and `load_from_defaults` in the `aws-config` crate.",
-      "meta": {
-        "bug": false,
-        "breaking": false,
-        "tada": false
-      },
-      "author": "ysaito1001",
-      "references": [
-        "aws-sdk-rust#1162"
-      ],
-      "since-commit": "57ed310e6d21041eb36d825c50032295eef0b630",
-      "age": 2
-    },
-    {
-      "message": "Pre-signed requests may now be converted to Http v1.x requests. This requires enabling the `http-1x` feature for the SDK in question.\nThen, call `PresignedRequest::make_http_1x_request` or `PresignedRequest::into_http_1x_request`.\n",
-      "meta": {
-        "bug": false,
-        "breaking": false,
-        "tada": true
-      },
-      "author": "Velfi",
-      "references": [
-        "smithy-rs#3696"
-      ],
-      "since-commit": "57ed310e6d21041eb36d825c50032295eef0b630",
-      "age": 2
-    },
-    {
-      "message": "`AwsErrorCodeClassifier` for S3 now treats `InternalError` as a transient error to trigger retries.",
+      "message": "Fix minimum throughput detection for downloads to avoid incorrectly raising an error while the user is consuming data at a slow but steady pace.\n",
       "meta": {
         "bug": true,
         "breaking": false,
@@ -86,10 +14,39 @@
       },
       "author": "ysaito1001",
       "references": [
-        "aws-sdk-rust#1163"
+        "smithy-rs#3871",
+        "aws-sdk-rust#1202"
       ],
-      "since-commit": "57ed310e6d21041eb36d825c50032295eef0b630",
-      "age": 2
+      "since-commit": "1e803494dc1c9f1d8290cf9317ed39b026a603a2",
+      "age": 4
+    },
+    {
+      "message": "Client SDKs built with the `awsQueryCompatible` trait now include the `x-amzn-query-mode` header. This header signals the service that the clients are operating in compatible mode.\n",
+      "meta": {
+        "bug": false,
+        "breaking": false,
+        "tada": false
+      },
+      "author": "ysaito1001",
+      "references": [
+        "smithy-rs#3883"
+      ],
+      "since-commit": "c606065c0e2e97d3cecb6a675ffc226dc488d674",
+      "age": 3
+    },
+    {
+      "message": "Fix default credential provider chain not respecting endpoint URL overrides from environment\n",
+      "meta": {
+        "bug": true,
+        "breaking": false,
+        "tada": false
+      },
+      "author": "aajtodd",
+      "references": [
+        "aws-sdk-rust#1193"
+      ],
+      "since-commit": "c606065c0e2e97d3cecb6a675ffc226dc488d674",
+      "age": 3
     }
   ],
   "aws-sdk-model": []

@@ -560,16 +560,22 @@ class Attribute(val inner: Writable, val isDeriveHelper: Boolean = false) {
         val AllowUnusedMut = Attribute(allow("unused_mut"))
         val AllowUnusedVariables = Attribute(allow("unused_variables"))
         val CfgTest = Attribute(cfg("test"))
+        val DenyDeprecated = Attribute(deny("deprecated"))
         val DenyMissingDocs = Attribute(deny("missing_docs"))
         val DocHidden = Attribute(doc("hidden"))
         val DocInline = Attribute(doc("inline"))
         val NoImplicitPrelude = Attribute("no_implicit_prelude")
 
-        fun shouldPanic(expectedMessage: String) =
-            Attribute(macroWithArgs("should_panic", "expected = ${expectedMessage.dq()}"))
+        fun shouldPanic(expectedMessage: String? = null): Attribute =
+            if (expectedMessage != null) {
+                Attribute(macroWithArgs("should_panic", "expected = ${expectedMessage.dq()}"))
+            } else {
+                Attribute("should_panic")
+            }
 
         val Test = Attribute("test")
         val TokioTest = Attribute(RuntimeType.Tokio.resolve("test").writable)
+        val TracedTest = Attribute(RuntimeType.TracingTest.resolve("traced_test").writable)
         val AwsSdkUnstableAttribute = Attribute(cfg("aws_sdk_unstable"))
 
         /**

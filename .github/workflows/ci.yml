@@ -38,7 +38,7 @@ on:
         required: false
 
 env:
-  rust_version: 1.76.0
+  rust_version: 1.78.0
   rust_toolchain_components: clippy,rustfmt
   ENCRYPTED_DOCKER_PASSWORD: ${{ secrets.ENCRYPTED_DOCKER_PASSWORD }}
   DOCKER_LOGIN_TOKEN_PASSPHRASE: ${{ secrets.DOCKER_LOGIN_TOKEN_PASSPHRASE }}
@@ -65,6 +65,9 @@ jobs:
       with:
         path: smithy-rs
         ref: ${{ inputs.git_ref }}
+        # `generate-smithy-rs-release` requires access to previous tags to determine if a numerical suffix is needed
+        # to make the release tag unique
+        fetch-depth: 0
     # The models from aws-sdk-rust are needed to generate the full SDK for CI
     - uses: actions/checkout@v4
       with:
@@ -142,7 +145,7 @@ jobs:
   check-semver-hazards:
     name: Check for semver hazards
     runs-on: smithy_ubuntu-latest_8-core
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
     - uses: actions/checkout@v4
       with:
@@ -200,7 +203,7 @@ jobs:
   test-rust-windows:
     name: Rust Tests on Windows
     runs-on: windows-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       # Disable incremental compilation to reduce disk space use
       CARGO_INCREMENTAL: 0
@@ -307,11 +310,11 @@ jobs:
             "OPENSSL_INCLUDE_DIR",
         ]
         [target.powerpc-unknown-linux-gnu]
-        pre-build = ["curl -L -s -o /tmp/openssl.sh https://github.com/cross-rs/cross/raw/c183ee37a9dc6b0e6b6a6ac9c918173137bad4ef/docker/openssl.sh && bash /tmp/openssl.sh linux-ppc powerpc-linux-gnu-"]
+        pre-build = ["curl -L -s https://github.com/cross-rs/cross/raw/c183ee37a9dc6b0e6b6a6ac9c918173137bad4ef/docker/openssl.sh | sed 's/curl https/curl -L https/' > /tmp/openssl.sh && bash /tmp/openssl.sh linux-ppc powerpc-linux-gnu-"]
         [target.powerpc-unknown-linux-gnu.env]
         passthrough = ["OPENSSL_DIR"]
         [target.powerpc64-unknown-linux-gnu]
-        pre-build = ["curl -L -s -o /tmp/openssl.sh https://github.com/cross-rs/cross/raw/c183ee37a9dc6b0e6b6a6ac9c918173137bad4ef/docker/openssl.sh && bash /tmp/openssl.sh linux-ppc64 powerpc64-linux-gnu-"]
+        pre-build = ["curl -L -s https://github.com/cross-rs/cross/raw/c183ee37a9dc6b0e6b6a6ac9c918173137bad4ef/docker/openssl.sh | sed 's/curl https/curl -L https/' > /tmp/openssl.sh && bash /tmp/openssl.sh linux-ppc64 powerpc64-linux-gnu-"]
         [target.powerpc64-unknown-linux-gnu.env]
         passthrough = ["OPENSSL_DIR"]
         EOF
