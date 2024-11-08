@@ -22,6 +22,12 @@ pub enum RuntimeError {
     Validation(String),
 }
 
+impl std::fmt::Display for RuntimeError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!( f, "{:?}", self)
+    }
+}
+
 impl RuntimeError {
     pub fn name(&self) -> &'static str {
         match self {
