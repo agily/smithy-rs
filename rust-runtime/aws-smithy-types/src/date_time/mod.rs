@@ -4,7 +4,7 @@
  */
 
 //! DateTime type for representing Smithy timestamps.
-
+use serde::Serialize;
 use crate::date_time::format::rfc3339::AllowOffsets;
 use crate::date_time::format::DateTimeParseErrorKind;
 use num_integer::div_mod_floor;
@@ -53,7 +53,7 @@ const NANOS_PER_SECOND_U32: u32 = 1_000_000_000;
 /// The [`aws-smithy-types-convert`](https://crates.io/crates/aws-smithy-types-convert) crate
 /// can be used for conversions to/from other libraries, such as
 /// [`time`](https://crates.io/crates/time) or [`chrono`](https://crates.io/crates/chrono).
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Serialize)]
 pub struct DateTime {
     pub(crate) seconds: i64,
     /// Subsecond nanos always advances the wallclock time, even for times where seconds is negative

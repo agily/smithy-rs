@@ -31,11 +31,10 @@ class Ec2QueryParserGenerator(
             xmlErrors,
         ) { context, inner ->
             val operationName = codegenContext.symbolProvider.toSymbol(context.shape).name
-            val responseWrapperName = operationName + "Response"
             rustTemplate(
                 """
-                if !(${XmlBindingTraitParserGenerator.XmlName(responseWrapperName).matchExpression("start_el")}) {
-                    return Err(#{XmlDecodeError}::custom(format!("invalid root, expected $responseWrapperName got {:?}", start_el)))
+                if !(${XmlBindingTraitParserGenerator.XmlName(operationName).matchExpression("start_el")}) {
+                    return Err(#{XmlDecodeError}::custom(format!("invalid root, expected $operationName got {:?}", start_el)))
                 }
                 """,
                 "XmlDecodeError" to context.xmlDecodeErrorType,
