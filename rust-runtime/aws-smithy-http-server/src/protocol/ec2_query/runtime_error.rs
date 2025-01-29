@@ -52,13 +52,33 @@ impl RuntimeError {
 
 impl IntoResponse<Ec2Query> for Error {
     fn into_response(self) -> Response<BoxBody> {
-        IntoResponse::<Ec2Query>::into_response(RuntimeError::InternalFailure(crate::Error::new(String::new())))
+        IntoResponse::<Ec2Query>::into_response(RuntimeError::InternalFailure(crate::Error::new("\
+                                                                                                            <Response>\
+                                                                                                              <Errors>\
+                                                                                                                <Error>\
+                                                                                                                  <Code>AuthFailure</Code>\
+                                                                                                                  <Message>AWS was not able to validate the provided access \
+                                                                                                                            credentials\
+                                                                                                                  </Message>\
+                                                                                                                </Error>\
+                                                                                                              </Errors>\
+                                                                                                            </Response>".to_string())))
     }
 }
 //
 impl IntoResponse<Ec2Query> for InternalFailureException {
     fn into_response(self) -> http::Response<crate::body::BoxBody> {
-        IntoResponse::<Ec2Query>::into_response(RuntimeError::InternalFailure(crate::Error::new(String::new())))
+        IntoResponse::<Ec2Query>::into_response(RuntimeError::InternalFailure(crate::Error::new("\
+                                                                                                            <Response>\
+                                                                                                              <Errors>\
+                                                                                                                <Error>\
+                                                                                                                  <Code>AuthFailure</Code>\
+                                                                                                                  <Message>AWS was not able to validate the provided access \
+                                                                                                                            credentials\
+                                                                                                                  </Message>\
+                                                                                                                </Error>\
+                                                                                                              </Errors>\
+                                                                                                            </Response>".to_string())))
     }
 }
 //
@@ -78,7 +98,17 @@ impl IntoResponse<Ec2Query> for RuntimeError {
         let body = match self {
             RuntimeError::Validation(reason) => crate::body::to_boxed(reason),
             // See https://awslabs.github.io/smithy/2.0/aws/protocols/aws-json-1_0-protocol.html#empty-body-serialization
-            _ => crate::body::to_boxed("{}"),
+            _ => crate::body::to_boxed("\
+                                                   <Response>\
+                                                     <Errors>\
+                                                       <Error>\
+                                                         <Code>AuthFailure</Code>\
+                                                         <Message>AWS was not able to validate the provided access \
+                                                                   credentials\
+                                                         </Message>\
+                                                       </Error>\
+                                                     </Errors>\
+                                                   </Response>"),
         };
 
         res.body(body)
