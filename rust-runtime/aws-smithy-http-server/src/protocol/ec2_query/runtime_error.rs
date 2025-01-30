@@ -41,11 +41,11 @@ impl RuntimeError {
 
     pub fn status_code(&self) -> StatusCode {
         match self {
-            Self::Serialization(_) => StatusCode::BAD_REQUEST,
-            Self::InternalFailure(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            Self::NotAcceptable => StatusCode::NOT_ACCEPTABLE,
-            Self::UnsupportedMediaType => StatusCode::UNSUPPORTED_MEDIA_TYPE,
-            Self::Validation(_) => StatusCode::BAD_REQUEST,
+            Self::Serialization(_) => StatusCode::FORBIDDEN,
+            Self::InternalFailure(_) => StatusCode::FORBIDDEN,
+            Self::NotAcceptable => StatusCode::FORBIDDEN,
+            Self::UnsupportedMediaType => StatusCode::FORBIDDEN,
+            Self::Validation(_) => StatusCode::FORBIDDEN,
         }
     }
 }
