@@ -89,14 +89,14 @@ class ServerProtocolLoader(supportedProtocols: ProtocolMap<ServerProtocolGenerat
                 AwsQueryTrait.ID to
                     ServerAwsQueryFactory(
                         additionalServerHttpBoundProtocolCustomizations = listOf(StreamPayloadSerializerCustomization())
-                    )
-                Rpcv2CborTrait.ID to
-                    ServerRpcV2CborFactory(
-                        additionalServerHttpBoundProtocolCustomizations =
-                            listOf(
-                                StreamPayloadSerializerCustomization(),
-                            ),
                     ),
+//                Rpcv2CborTrait.ID to
+//                    ServerRpcV2CborFactory(
+//                        additionalServerHttpBoundProtocolCustomizations =
+//                            listOf(
+//                                StreamPayloadSerializerCustomization(),
+//                            ),
+//                    ),
             )
     }
 }
