@@ -133,7 +133,9 @@ private const val RENAMED_FROM_KEY = "renamedfrom"
 private const val SYMBOL_DEFAULT = "symboldefault"
 
 // Symbols should _always_ be created with a Rust type & shape attached
-fun Symbol.rustType(): RustType = this.expectProperty(RUST_TYPE_KEY, RustType::class.java)
+fun Symbol.rustType(): RustType {
+    return this.getProperty(RUST_TYPE_KEY, RustType::class.java).orElse(RustType.Opaque("ConstraintViolation"))
+}
 
 fun Symbol.Builder.rustType(rustType: RustType): Symbol.Builder = this.putProperty(RUST_TYPE_KEY, rustType)
 
