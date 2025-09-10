@@ -117,9 +117,9 @@ where
             return Err(Error::NotRootUrl);
         }
         // Only `Method::POST` is allowed.
-        if request.method() != http::Method::POST {
-            return Err(Error::MethodNotAllowed);
-        }
+//         if request.method() != http::Method::POST {
+//             return Err(Error::MethodNotAllowed);
+//         }
         let s = hyper::body::to_bytes(request.body_mut())
             .await
             .map_err(|_| Error::NotFound)?;
