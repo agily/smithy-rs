@@ -18,7 +18,7 @@ import software.amazon.smithy.rust.codegen.core.smithy.protocols.parse.Structure
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.serialize.Ec2QuerySerializerGenerator
 import software.amazon.smithy.rust.codegen.core.smithy.protocols.serialize.StructuredDataSerializerGenerator
 
-class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protocol {
+open class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protocol {
     private val runtimeConfig = codegenContext.runtimeConfig
     private val ec2QueryErrors: RuntimeType = RuntimeType.ec2QueryErrors(runtimeConfig)
     private val errorScope =
@@ -37,7 +37,7 @@ class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protocol {
                 .method("POST")
                 .uri(UriPattern.parse("/"))
                 .build(),
-            "application/x-www-form-urlencoded",
+            "application/x-www-form-urlencoded; charset=utf-8",
             "text/xml",
         )
 
@@ -47,7 +47,7 @@ class Ec2QueryProtocol(private val codegenContext: CodegenContext) : Protocol {
         Ec2QueryParserGenerator(codegenContext, ec2QueryErrors)
 
     override fun structuredDataSerializer(): StructuredDataSerializerGenerator =
-        Ec2QuerySerializerGenerator(codegenContext)
+        Ec2QuerySerializerGenerator(codegenContext, httpBindingResolver)
 
     override fun parseHttpErrorMetadata(operationShape: OperationShape): RuntimeType =
         ProtocolFunctions.crossOperationFn("parse_http_error_metadata") { fnName ->

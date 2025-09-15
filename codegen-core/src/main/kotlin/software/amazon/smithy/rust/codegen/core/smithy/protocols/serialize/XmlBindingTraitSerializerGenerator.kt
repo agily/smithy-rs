@@ -204,7 +204,7 @@ class XmlBindingTraitSerializerGenerator(
             )
         }
 
-    override fun operationOutputSerializer(operationShape: OperationShape): RuntimeType? {
+    override fun operationOutputSerializer(operationShape: OperationShape): RuntimeType? {//
         val outputShape = operationShape.outputShape(model)
         val xmlMembers = operationShape.responseBodyMembers()
         if (xmlMembers.isEmpty()) {

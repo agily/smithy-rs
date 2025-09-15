@@ -20,6 +20,8 @@ mod route;
 
 pub(crate) mod tiny_map;
 
+use std::fmt::Debug;
+use std::time::Duration;
 use std::{
     error::Error,
     fmt,
@@ -27,6 +29,7 @@ use std::{
     marker::PhantomData,
     pin::Pin,
     task::{Context, Poll},
+    thread,
 };
 
 use bytes::Bytes;
@@ -36,7 +39,9 @@ use futures_util::{
 };
 use http::Response;
 use http_body::Body as HttpBody;
+use tokio::runtime::Handle;
 use tower::{util::Oneshot, Service, ServiceExt};
+use tracing::debug;
 
 use crate::{
     body::{boxed, BoxBody},
@@ -70,15 +75,15 @@ pub trait Router<B> {
     type Error;
 
     /// Matches a [`http::Request`] to a target [`Service`].
-    fn match_route(&self, request: &http::Request<B>) -> Result<Self::Service, Self::Error>;
+    async fn match_route(&self, request: &mut http::Request<B>) -> Result<Self::Service, Self::Error>;
 }
 
 /// A [`Service`] using the [`Router`] `R` to redirect messages to specific routes.
 ///
 /// The `Protocol` parameter is used to determine the serialization of errors.
 pub struct RoutingService<R, Protocol> {
-    router: R,
-    _protocol: PhantomData<Protocol>,
+    pub router: R,
+    pub _protocol: PhantomData<Protocol>,
 }
 
 impl<R, P> fmt::Debug for RoutingService<R, P>
@@ -175,30 +180,51 @@ where
 
 impl<R, P, B, RespB> Service<http::Request<B>> for RoutingService<R, P>
 where
-    R: Router<B>,
-    R::Service: Service<http::Request<B>, Response = http::Response<RespB>> + Clone,
-    R::Error: IntoResponse<P> + Error,
+    R: Router<B> + 'static + Clone,
+    R::Service: Service<http::Request<B>, Response = http::Response<RespB>> + Clone + 'static,
+    R::Error: IntoResponse<P> + Error + 'static,
     RespB: HttpBody<Data = Bytes> + Send + 'static,
-    RespB::Error: Into<BoxError>,
+    RespB::Error: Into<BoxError> + 'static,
+    B: Default + Debug + HttpBody + std::marker::Unpin + 'static,
+    hyper::Body: From<B> + 'static,
+    P: 'static,
 {
-    type Response = Response<BoxBody>;
+    type Response = RoutingFuture<<R as Router<B>>::Service, B>;
     type Error = <R::Service as Service<http::Request<B>>>::Error;
-    type Future = RoutingFuture<R::Service, B>;
+    type Future = Pin<Box<dyn Future<Output = Result<RoutingFuture<R::Service, B>, Self::Error>>>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         Poll::Ready(Ok(()))
     }
 
     fn call(&mut self, req: http::Request<B>) -> Self::Future {
-        tracing::debug!("inside routing service call");
-        match self.router.match_route(&req) {
-            // Successfully routed, use the routes `Service::call`.
-            Ok(ok) => RoutingFuture::from_oneshot(ok.oneshot(req)),
-            // Failed to route, use the `R::Error`s `IntoResponse<P>`.
-            Err(error) => {
-                tracing::debug!(%error, "failed to route");
-                RoutingFuture::from_response(error.into_response())
-            }
-        }
+        let mut a = self.clone();
+        let fut = async move { foo(&mut a, req).await };
+        Box::pin(fut)
     }
+}
+
+async fn foo<R, B, P, RespB>(
+    a: &mut RoutingService<R, P>,
+    mut req: http::Request<B>,
+) -> Result<RoutingFuture<R::Service, B>, <R::Service as Service<http::Request<B>>>::Error>
+where
+    R: Router<B>,
+    R::Service: Service<http::Request<B>, Response = http::Response<RespB>> + Clone,
+    R::Error: IntoResponse<P> + Error,
+    RespB: HttpBody<Data = Bytes> + Send + 'static,
+    RespB::Error: Into<BoxError>,
+    B: Default + Debug + HttpBody + std::marker::Unpin,
+    hyper::Body: From<B>,
+{
+    let a = match a.router.match_route(&mut req).await {
+        // Successfully routed, use the routes `Service::call`.
+        Ok(ok) => RoutingFuture::from_oneshot(ok.oneshot(req)),
+        // Failed to route, use the `R::Error`s `IntoResponse<P>`.
+        Err(error) => {
+            debug!(%error, "failed to route");
+            RoutingFuture::from_response(error.into_response())
+        }
+    };
+    Ok(a)
 }

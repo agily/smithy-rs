@@ -8,6 +8,8 @@
 /* End of automatically managed default lints */
 #![allow(clippy::derive_partial_eq_without_eq)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
+#![allow(unused_imports)]
+#![allow(async_fn_in_trait)]
 
 //! HTTP server runtime and utilities, loosely based on [axum].
 //!

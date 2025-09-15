@@ -475,6 +475,7 @@ dependencies = [
  "aws-smithy-xml 0.60.9",
  "bytes",
  "futures-util",
+ "heck",
  "http 0.2.12",
  "http-body 0.4.6",
  "hyper 0.14.31",
@@ -484,14 +485,21 @@ dependencies = [
  "once_cell",
  "pin-project-lite",
  "pretty_assertions",
+ "quick-xml",
  "regex",
+ "serde",
+ "serde-xml-rs",
+ "serde_json",
  "serde_urlencoded",
  "thiserror",
  "tokio",
  "tower",
  "tower-http",
  "tracing",
+ "url",
+ "urlencoding",
  "uuid",
+ "xml",
 ]
 
 [[package]]
@@ -1710,6 +1718,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2718,6 +2732,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a1d01941d82fa2ab50be1e79e6714289dd7cde78eba4c074bc5a4374f650dfe0"
 
 [[package]]
+name = "quick-xml"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f24d770aeca0eacb81ac29dfbc55ebcc09312fdd1f8bbecdc7e4a84e000e3b4"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3146,6 +3169,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f55c3193aca71c12ad7890f1785d2b73e1b9f63a0bbc353c08ef26fe03fc56b5"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-xml-rs"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb3aa78ecda1ebc9ec9847d5d3aba7d618823446a049ba2491940506da6e2782"
+dependencies = [
+ "log",
+ "serde",
+ "thiserror",
+ "xml-rs",
 ]
 
 [[package]]
@@ -3797,6 +3832,7 @@ dependencies = [
  "form_urlencoded",
  "idna",
  "percent-encoding",
+ "serde",
 ]
 
 [[package]]
@@ -4074,6 +4110,21 @@ checksum = "b37d270da94012e0ac490ac633ad5bdd76a10a3fb15069edb033c1b771ce931f"
 dependencies = [
  "bitflags 2.6.0",
 ]
+
+[[package]]
+name = "xml"
+version = "0.8.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ede1c99c55b4b3ad0349018ef0eccbe954ce9c342334410707ee87177fcf2ab4"
+dependencies = [
+ "xml-rs",
+]
+
+[[package]]
+name = "xml-rs"
+version = "0.8.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af310deaae937e48a26602b730250b4949e125f468f11e6990be3e5304ddd96f"
 
 [[package]]
 name = "xmlparser"

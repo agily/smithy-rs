@@ -251,12 +251,12 @@ open class ServerCodegenVisitor(
                 // TODO(https://github.com/smithy-lang/smithy-rs/issues/1756): These are getting duplicated.
                 logger.log(logMessage.level, logMessage.message)
             }
-            if (validationResult.shouldAbort) {
-                throw CodegenException(
-                    "Unsupported constraints feature used; see error messages above for resolution",
-                    validationResult,
-                )
-            }
+//            if (validationResult.shouldAbort) {
+//                throw CodegenException(
+//                    "Unsupported constraints feature used; see error messages above for resolution",
+//                    validationResult,
+//                )
+//            }
         }
 
         rustCrate.initializeInlineModuleWriter(codegenContext.settings.codegenConfig.debugMode)

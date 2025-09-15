@@ -70,7 +70,7 @@ where
     type Service = S;
     type Error = Error;
 
-    fn match_route(&self, request: &http::Request<B>) -> Result<S, Self::Error> {
+    async fn match_route(&self, request: &mut http::Request<B>) -> Result<S, Self::Error> {
         let mut method_allowed = true;
 
         for (request_spec, route) in &self.routes {
@@ -115,8 +115,8 @@ mod tests {
 
     // This test is a rewrite of `mux.spec.ts`.
     // https://github.com/awslabs/smithy-typescript/blob/fbf97a9bf4c1d8cf7f285ea7c24e1f0ef280142a/smithy-typescript-ssdk-libs/server-common/src/httpbinding/mux.spec.ts
-    #[test]
-    fn simple_routing() {
+    #[tokio::test]
+    async fn simple_routing() {
         let request_specs: Vec<(RequestSpec, &'static str)> = vec![
             (
                 RequestSpec::from_parts(
@@ -180,11 +180,11 @@ mod tests {
             ("QueryKeyOnly", Method::POST, "/query_key_only?foo=&"),
         ];
         for (svc_name, method, uri) in &hits {
-            assert_eq!(router.match_route(&req(method, uri, None)).unwrap(), *svc_name);
+            assert_eq!(router.match_route(&mut req(method, uri, None)).await.unwrap(), *svc_name);
         }
 
         for (_, _, uri) in hits {
-            let res = router.match_route(&req(&Method::PATCH, uri, None));
+            let res = router.match_route(&mut req(&Method::PATCH, uri, None)).await;
             assert_eq!(res.unwrap_err(), Error::MethodNotAllowed);
         }
 
@@ -203,7 +203,7 @@ mod tests {
             (Method::POST, "/"),
         ];
         for (method, miss) in misses {
-            let res = router.match_route(&req(&method, miss, None));
+            let res = router.match_route(&mut req(&method, miss, None)).await;
             assert_eq!(res.unwrap_err(), Error::NotFound);
         }
     }
@@ -258,7 +258,7 @@ mod tests {
             ("B2", Method::GET, "/b/foo?q=baz"),
         ];
         for (svc_name, method, uri) in hits {
-            assert_eq!(router.match_route(&req(&method, uri, None)).unwrap(), svc_name);
+            assert_eq!(router.match_route(&mut req(&method, uri, None)).await.unwrap(), svc_name);
         }
     }
 }

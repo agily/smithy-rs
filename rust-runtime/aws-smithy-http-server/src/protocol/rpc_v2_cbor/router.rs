@@ -205,7 +205,7 @@ impl<S: Clone, B> Router<B> for RpcV2CborRouter<S> {
 
     type Error = Error;
 
-    fn match_route(&self, request: &http::Request<B>) -> Result<Self::Service, Self::Error> {
+    async fn match_route(&self, request: &mut http::Request<B>) -> Result<Self::Service, Self::Error> {
         // Only `Method::POST` is allowed.
         if request.method() != http::Method::POST {
             return Err(Error::MethodNotAllowed);
