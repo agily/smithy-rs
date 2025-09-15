@@ -13,7 +13,7 @@ Server runtime for Smithy Rust Server Framework.
 publish = true
 
 [features]
-aws-lambda = ["dep:lambda_http"]
+#aws-lambda = [" :lambda_http"]
 unredacted-logging = []
 request-id = ["dep:uuid"]
 
